@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Badge, Bullets, Button, GroupLabel, Meter, Spinner, scoreTone } from "./ui";
 import { useLang } from "./lang";
-import { cvFileName, upgradedCvToDocHtml } from "@/lib/cvExport";
+import { cvFileName, upgradedCvToDocHtml, upgradedCvToPrintHtml } from "@/lib/cvExport";
 import { hasPlaceholders, upgradedCvToText, type UpgradeResult } from "@/lib/schemas";
 
 export function UpgradedCvTab({
@@ -35,10 +35,7 @@ export function UpgradedCvTab({
 
   function download() {
     if (!upgraded) return;
-    const html = upgradedCvToDocHtml(upgraded.cv, {
-      dir: t.dir,
-      experienceTitle: t.upgradeExperience,
-    });
+    const html = upgradedCvToDocHtml(upgraded.cv, { experienceTitle: t.upgradeExperience });
     // The BOM keeps Word from guessing the encoding wrong on Hebrew.
     const blob = new Blob([`\ufeff${html}`], { type: "application/msword" });
     const url = URL.createObjectURL(blob);
@@ -54,6 +51,28 @@ export function UpgradedCvTab({
       link.remove();
       URL.revokeObjectURL(url);
     }, 1000);
+  }
+
+  /**
+   * Print through a hidden iframe so the browser's own text engine lays the CV
+   * out — that is what keeps a mixed Hebrew/English line in the right order.
+   */
+  function savePdf() {
+    if (!upgraded) return;
+    const html = upgradedCvToPrintHtml(upgraded.cv, { experienceTitle: t.upgradeExperience });
+    const frame = document.createElement("iframe");
+    frame.setAttribute("aria-hidden", "true");
+    frame.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;";
+    frame.srcdoc = html;
+    frame.onload = () => {
+      const win = frame.contentWindow;
+      if (!win) return;
+      win.focus();
+      win.print();
+      // Firefox needs the frame to outlive the dialog it opened.
+      setTimeout(() => frame.remove(), 60_000);
+    };
+    document.body.append(frame);
   }
 
   if (!upgraded) {
@@ -73,7 +92,10 @@ export function UpgradedCvTab({
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
-        <Button onClick={download}>{t.upgradeDownload}</Button>
+        <Button onClick={savePdf}>{t.upgradePdf}</Button>
+        <Button variant="ghost" onClick={download}>
+          {t.upgradeDownload}
+        </Button>
         <Button variant="ghost" onClick={copy}>
           {copied ? t.upgradeCopied : t.upgradeCopy}
         </Button>
@@ -87,6 +109,8 @@ export function UpgradedCvTab({
           <span className="tnum text-[11px] text-ink-500">{t.upgradeWas(previousScore)}</span>
         </span>
       </div>
+
+      <p className="text-[11px] text-ink-500">{t.upgradePdfHint}</p>
 
       {note ? <p className="rounded-sm bg-sunk px-3 py-2 text-xs text-ink-700">{note}</p> : null}
 

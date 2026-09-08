@@ -5,7 +5,7 @@ import { CvUpload, type CvResult } from "@/components/CvUpload";
 import { CvReviewPanel } from "@/components/CvReviewPanel";
 import { CompanyManager } from "@/components/CompanyManager";
 import { MatchResults } from "@/components/MatchResults";
-import { Card } from "@/components/ui";
+import { Card, cx } from "@/components/ui";
 import type { CompanyResult, ScoredJob } from "@/lib/schemas";
 
 const STORAGE_KEY = "cv-job-match:v1";
@@ -61,7 +61,7 @@ export default function Home() {
 
       if (!jobs.length) {
         setState((s) => ({ ...s, results, scored: [] }));
-        setError("No openings could be read for those companies. See the notes under each company.");
+        setError("No openings could be read for those companies. The notes under each company say why.");
         return;
       }
 
@@ -81,81 +81,85 @@ export default function Home() {
     }
   }
 
+  const steps: [string, string, boolean][] = [
+    ["1", state.cv ? "CV read" : "Upload a CV", Boolean(state.cv)],
+    ["2", state.companies.length ? `${state.companies.length} companies` : "Add companies", state.companies.length > 0],
+    ["3", state.scored.length ? `${state.scored.length} roles scored` : "Score my fit", state.scored.length > 0],
+  ];
+
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
-      <header className="mb-8">
-        <div className="flex items-center gap-2.5">
-          <div className="grid h-8 w-8 place-items-center rounded-lg bg-indigo-600 text-white">
-            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2">
-              <path d="M4 12l5 5L20 6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
-          <h1 className="text-lg font-semibold tracking-tight">CV → Job Match</h1>
+    <div className="min-h-screen">
+      <header className="sticky top-0 z-10 border-b border-line bg-paper/90 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 sm:px-6">
+          <p className="font-display text-lg font-medium tracking-tight text-ink-900">
+            CV <span className="text-brand">→</span> Job Match
+          </p>
+          <ol className="ml-auto flex items-center gap-1 text-xs">
+            {steps.map(([n, label, done], i) => (
+              <li key={n} className="flex items-center gap-1">
+                {i > 0 ? <span className="mx-1 h-px w-4 bg-line-firm" aria-hidden /> : null}
+                <span
+                  className={cx(
+                    "tnum grid h-4 w-4 place-items-center rounded-full text-[10px] font-medium",
+                    done ? "bg-brand text-white" : "bg-sunk text-ink-300 ring-1 ring-inset ring-line"
+                  )}
+                >
+                  {n}
+                </span>
+                <span className={cx("hidden sm:inline", done ? "text-ink-900" : "text-ink-500")}>{label}</span>
+              </li>
+            ))}
+          </ol>
         </div>
-        <p className="mt-2 max-w-2xl text-sm text-ink-600 dark:text-ink-200">
-          Upload your CV to get a blunt review and specific fixes. Then list the companies you want to
-          work at — the app pulls their real open roles and scores how well your CV fits each one.
-        </p>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_23rem]">
-        <div className="space-y-6">
-          <CvUpload
-            current={state.cv}
-            onParsed={(cv) =>
-              setState((s) => ({
-                ...s,
-                cv,
-                companies: s.companies.length ? s.companies : cv.profile.industries.slice(0, 0),
-              }))
-            }
-            onReset={() => setState((s) => ({ ...s, cv: null, scored: [] }))}
-          />
+      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+        {!state.cv ? (
+          <div className="mb-10 max-w-2xl">
+            <h1 className="font-display text-4xl font-medium leading-[1.15] tracking-tight text-ink-900 sm:text-5xl">
+              Find out what your CV is worth before a recruiter does.
+            </h1>
+            <p className="mt-4 max-w-xl text-base leading-relaxed text-ink-700">
+              Your CV comes back graded, with the exact lines to change. Then name the companies you
+              want to work at: their real openings get pulled straight from the job boards they post
+              on, and each one is scored against what your CV actually says.
+            </p>
+          </div>
+        ) : null}
 
-          {state.cv ? (
-            <CvReviewPanel review={state.cv.review} profile={state.cv.profile} />
-          ) : (
-            <Card className="p-6">
-              <p className="text-sm font-medium text-ink-600 dark:text-ink-200">What you get</p>
-              <ul className="mt-3 grid gap-2.5 text-sm text-ink-600 sm:grid-cols-3 dark:text-ink-200">
-                {[
-                  ["A graded review", "Score out of 100 with high/medium/low priority fixes, ATS problems and bullet rewrites."],
-                  ["Real openings", "Live roles pulled from company job boards — Greenhouse, Lever, Ashby, Workable and more."],
-                  ["Honest fit scores", "Per-role percentage with matched skills, gaps, and the CV edits that would close them."],
-                ].map(([title, body]) => (
-                  <li key={title} className="rounded-xl border border-black/5 p-3.5 dark:border-white/8">
-                    <p className="text-sm font-semibold text-ink-800 dark:text-ink-100">{title}</p>
-                    <p className="mt-1 text-xs text-ink-400">{body}</p>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          )}
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+          <div className="min-w-0 space-y-6">
+            <CvUpload
+              current={state.cv}
+              onParsed={(cv) => setState((s) => ({ ...s, cv }))}
+              onReset={() => setState((s) => ({ ...s, cv: null, scored: [] }))}
+            />
 
-          <MatchResults jobs={state.scored} />
+            {state.cv ? <CvReviewPanel review={state.cv.review} profile={state.cv.profile} /> : null}
+
+            {state.cv ? <MatchResults jobs={state.scored} /> : null}
+          </div>
+
+          <aside className="min-w-0 space-y-4 lg:sticky lg:top-20 lg:self-start">
+            <CompanyManager
+              companies={state.companies}
+              setCompanies={(companies) => setState((s) => ({ ...s, companies }))}
+              results={state.results}
+              busy={busy}
+              disabled={!state.cv}
+              onSearch={runSearch}
+            />
+            {error ? (
+              <Card className="border-bad/30 bg-bad-soft px-4 py-3 text-xs text-bad">{error}</Card>
+            ) : null}
+            <p className="px-1 text-[11px] leading-relaxed text-ink-500">
+              Everything stays in this browser. Your CV text, profile and results are kept in local
+              storage and sent only to your own OpenAI key for analysis. LinkedIn blocks automated
+              access, so each company links to its own board instead.
+            </p>
+          </aside>
         </div>
-
-        <aside className="space-y-4 lg:sticky lg:top-8 lg:self-start">
-          <CompanyManager
-            companies={state.companies}
-            setCompanies={(companies) => setState((s) => ({ ...s, companies }))}
-            results={state.results}
-            busy={busy}
-            disabled={!state.cv}
-            onSearch={runSearch}
-          />
-          {error ? (
-            <div className="rounded-xl bg-rose-50 px-3.5 py-2.5 text-xs text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">
-              {error}
-            </div>
-          ) : null}
-          <p className="px-1 text-[11px] leading-relaxed text-ink-400">
-            Everything stays in this browser — your CV text, profile and results are kept in local
-            storage and are only sent to your own OpenAI key for analysis. LinkedIn blocks automated
-            access, so each company links out to a LinkedIn jobs search you can check by hand.
-          </p>
-        </aside>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }

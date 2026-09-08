@@ -16,8 +16,8 @@ Requires `OPENAI_API_KEY` in `.env.local` (`SERPER_API_KEY` optional — see `.e
 
 ## Architecture
 
-Next.js 15 App Router, React 19, Tailwind v4 (CSS-first `@theme` in `src/app/globals.css`,
-no tailwind.config). Single client page + three POST route handlers. No database: all state
+Next.js 16 (Turbopack) App Router, React 19, Tailwind v4 (CSS-first `@theme` in
+`src/app/globals.css`, no tailwind.config). Single client page + three POST route handlers. No database: all state
 lives in `localStorage` under `cv-job-match:v1`, owned entirely by `src/app/page.tsx`
 (one `Persisted` object; children get props + setters, no context/store).
 
@@ -69,5 +69,24 @@ split, so don't replace it with per-job LLM calls.
   `{ error: string }` with a status the UI surfaces verbatim.
 - `pdfjs-dist` is in `serverExternalPackages`; `lib/pdf.ts` imports the legacy build so it
   runs worker-free server-side. Scanned PDFs (<200 non-space chars) are rejected with 422.
-- Shared primitives (`Card`, `Button`, `cx`, badges) live in `components/ui.tsx`; colors use
-  the `ink-*` scale and every surface needs its `dark:` variant.
+- Colors are semantic tokens only (`paper`, `surface`, `sunk`, `ink-900/700/500/300`, `line`,
+  `brand`, and the score tones `good`/`info`/`warn`/`bad` with their `-soft` fills). Dark mode
+  works by redefining those same tokens under `prefers-color-scheme: dark` in globals.css, so
+  components carry no `dark:` variants — never reintroduce raw Tailwind palette colors.
+- Shared primitives live in `components/ui.tsx`: `Card` (hairline panel), `Button`, `Badge`,
+  `Meter`/`ScoreStat` (every score is a display numeral plus a meter), `GroupLabel`, `Bullets`.
+  Score colors come from `scoreTone`; tone-to-class maps are written out in full because
+  Tailwind cannot see interpolated class names.
+- Two typefaces, loaded in `layout.tsx`: Instrument Sans for UI, Newsreader (`font-display`)
+  for headings and all figures.
+- Grid children need `min-w-0` or long titles push the mobile layout wider than the viewport.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

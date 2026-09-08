@@ -43,21 +43,24 @@ export function CvUpload({
   }
 
   if (current && !busy) {
+    const { profile } = current;
+    const meta = [
+      profile.yearsExperience ? `${profile.yearsExperience} years` : "",
+      profile.seniority,
+      profile.location,
+    ].filter(Boolean);
     return (
-      <Card className="flex flex-wrap items-center justify-between gap-3 p-4">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-500/12 dark:text-indigo-300">
-            <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <path d="M14 3v5h5M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z" />
-            </svg>
-          </div>
+      <Card className="flex flex-wrap items-center justify-between gap-4 px-5 py-4">
+        <div className="flex min-w-0 flex-1 items-start gap-3.5">
+          <svg viewBox="0 0 24 24" className="mt-0.5 h-5 w-5 shrink-0 text-brand" fill="none" stroke="currentColor" strokeWidth="1.6">
+            <path d="M14 3v5h5M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z" />
+            <path d="M8.5 13h7M8.5 16.5h4.5" strokeLinecap="round" />
+          </svg>
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium">{current.fileName}</p>
-            <p className="truncate text-xs text-ink-400">
-              {current.profile.headline || "CV parsed"}
-              {current.profile.yearsExperience
-                ? ` · ${current.profile.yearsExperience} yrs · ${current.profile.seniority}`
-                : ""}
+            <p className="truncate text-sm font-medium text-ink-900">{current.fileName}</p>
+            <p className="truncate text-xs text-ink-500">
+              {profile.headline || "CV read"}
+              {meta.length ? ` — ${meta.join(", ")}` : ""}
             </p>
           </div>
         </div>
@@ -69,7 +72,7 @@ export function CvUpload({
   }
 
   return (
-    <Card className="p-2">
+    <Card className="p-1.5">
       <div
         onDragOver={(e) => {
           e.preventDefault();
@@ -84,10 +87,8 @@ export function CvUpload({
         }}
         onClick={() => !busy && inputRef.current?.click()}
         className={cx(
-          "cursor-pointer rounded-xl border-2 border-dashed px-6 py-10 text-center transition",
-          dragging
-            ? "border-indigo-400 bg-indigo-50/60 dark:bg-indigo-500/8"
-            : "border-black/10 hover:border-indigo-300 hover:bg-ink-50/60 dark:border-white/12 dark:hover:bg-white/[0.04]"
+          "cursor-pointer rounded border border-dashed px-6 py-12 text-center transition-colors",
+          dragging ? "border-brand bg-brand-soft" : "border-line-firm hover:border-brand hover:bg-sunk"
         )}
       >
         <input
@@ -102,29 +103,25 @@ export function CvUpload({
           }}
         />
         {busy ? (
-          <div className="flex flex-col items-center gap-3 text-sm text-ink-600 dark:text-ink-200">
-            <Spinner className="h-6 w-6 text-indigo-600" />
-            <p className="font-medium">Reading and reviewing your CV…</p>
-            <p className="text-xs text-ink-400">Extraction and review run together — usually 10–25 seconds.</p>
+          <div className="flex flex-col items-center gap-3">
+            <Spinner className="h-5 w-5 text-brand" />
+            <p className="font-display text-xl font-medium text-ink-900">Reading your CV</p>
+            <p className="text-xs text-ink-500">Extraction and review run together — usually 10 to 25 seconds.</p>
           </div>
         ) : (
           <>
-            <div className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-500/12 dark:text-indigo-300">
-              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <path d="M12 16V4m0 0L8 8m4-4 4 4M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" strokeLinecap="round" />
-              </svg>
-            </div>
-            <p className="text-sm font-medium">Drop your CV here, or click to choose a file</p>
-            <p className="mt-1 text-xs text-ink-400">
-              PDF only — your own CV or LinkedIn&apos;s &ldquo;Save to PDF&rdquo; export. Max 12 MB.
+            <p className="font-display text-2xl font-medium leading-snug text-ink-900">
+              Drop your CV here
+            </p>
+            <p className="mx-auto mt-2 max-w-sm text-sm text-ink-500">
+              Or click to choose a file. PDF only — your own CV, or LinkedIn&apos;s
+              &ldquo;Save to PDF&rdquo; export. Up to 12&nbsp;MB.
             </p>
           </>
         )}
       </div>
       {error ? (
-        <p className="mx-2 mb-2 mt-2 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">
-          {error}
-        </p>
+        <p className="m-1.5 rounded-sm bg-bad-soft px-3 py-2 text-xs text-bad">{error}</p>
       ) : null}
     </Card>
   );

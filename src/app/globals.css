@@ -1,14 +1,55 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink-50: #f6f7fb;
-  --color-ink-100: #eceef6;
-  --color-ink-200: #d7dbe9;
-  --color-ink-400: #8b93ac;
-  --color-ink-600: #4a5169;
-  --color-ink-800: #1e2233;
-  --color-ink-900: #14172440;
-  --font-sans: ui-sans-serif, -apple-system, "Segoe UI", Inter, system-ui, sans-serif;
+  --color-paper: #eceee8;
+  --color-surface: #fbfbf8;
+  --color-sunk: #f3f4ee;
+  --color-ink-900: #131d1a;
+  --color-ink-700: #2d3a36;
+  --color-ink-500: #5d6a65;
+  --color-ink-300: #8b9792;
+  --color-line: #d8ddd4;
+  --color-line-firm: #c0c8bd;
+  --color-brand: #0b6e5f;
+  --color-brand-ink: #085145;
+  --color-brand-soft: #dfeae5;
+  --color-good: #0b6e5f;
+  --color-good-soft: #dfeae5;
+  --color-info: #2f5c8a;
+  --color-info-soft: #e1e8f1;
+  --color-warn: #8f6208;
+  --color-warn-soft: #f2e9d4;
+  --color-bad: #8e2a3e;
+  --color-bad-soft: #f4e2e5;
+
+  --font-sans: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-newsreader), ui-serif, Georgia, serif;
+}
+
+/* Same token names, inverted values — every component follows without a dark: variant. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-paper: #0d1412;
+    --color-surface: #141c1a;
+    --color-sunk: #1a2321;
+    --color-ink-900: #e8ece8;
+    --color-ink-700: #c3ccc7;
+    --color-ink-500: #8c9a94;
+    --color-ink-300: #6d7a75;
+    --color-line: #26312e;
+    --color-line-firm: #35423e;
+    --color-brand: #4bab98;
+    --color-brand-ink: #7cc9b8;
+    --color-brand-soft: #17322c;
+    --color-good: #4bab98;
+    --color-good-soft: #17322c;
+    --color-info: #7ba7d4;
+    --color-info-soft: #1a2735;
+    --color-warn: #cfa04a;
+    --color-warn-soft: #2e2718;
+    --color-bad: #d97d8e;
+    --color-bad-soft: #33191e;
+  }
 }
 
 :root {
@@ -21,29 +62,40 @@ body {
 }
 
 body {
-  background: #f6f7fb;
-  color: #171a26;
+  background: var(--color-paper);
+  color: var(--color-ink-900);
   font-family: var(--font-sans);
+  font-feature-settings: "cv05" 1;
   -webkit-font-smoothing: antialiased;
 }
 
-@media (prefers-color-scheme: dark) {
-  body {
-    background: #0d1017;
-    color: #e7e9f2;
-  }
+/* Figures line up in columns wherever they appear. */
+.tnum,
+input[type="range"],
+.font-display {
+  font-variant-numeric: tabular-nums;
 }
 
 ::selection {
-  background: #4f46e5;
+  background: var(--color-brand);
   color: #fff;
 }
 
-.scrollbar-thin::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
 }
-.scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgb(120 130 160 / 0.35);
-  border-radius: 999px;
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-firm) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
 }

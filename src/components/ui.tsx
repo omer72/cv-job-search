@@ -71,6 +71,7 @@ export function Badge({
   }[tone];
   return (
     <span
+      dir="auto"
       className={cx(
         "inline-flex items-center rounded-sm px-1.5 py-0.5 text-[11px] font-medium leading-snug ring-1 ring-inset",
         tones
@@ -88,11 +89,12 @@ export function scoreTone(score: number): "good" | "info" | "warn" | "bad" {
   return "bad";
 }
 
-export function fitLabel(score: number): string {
-  if (score >= 85) return "strong fit";
-  if (score >= 65) return "worth applying";
-  if (score >= 40) return "a stretch";
-  return "poor fit";
+/** Key into the translated fit labels. */
+export function fitKey(score: number): "strong" | "apply" | "stretch" | "poor" {
+  if (score >= 85) return "strong";
+  if (score >= 65) return "apply";
+  if (score >= 40) return "stretch";
+  return "poor";
 }
 
 const BAR = {
@@ -189,7 +191,7 @@ export function Bullets({
   return (
     <ul className="space-y-1.5 text-sm text-ink-700">
       {items.map((item, i) => (
-        <li key={i} className="flex gap-2.5">
+        <li key={i} dir="auto" className="flex gap-2.5">
           <span className={cx("mt-[7px] h-1 w-1 shrink-0 rounded-full", dot)} />
           <span>{item}</span>
         </li>

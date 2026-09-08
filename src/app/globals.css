@@ -56,6 +56,12 @@
   color-scheme: light dark;
 }
 
+/* The language toggle sets lang on <html>; the typefaces follow. */
+:root[lang="he"] {
+  --font-sans: var(--font-assistant), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-frank-ruhl), ui-serif, Georgia, serif;
+}
+
 html,
 body {
   min-height: 100%;

@@ -227,8 +227,8 @@ const PROVIDERS: Provider[] = [
  * Try every known public ATS board API against every plausible slug for the
  * company. Returns the board with the most postings, or null if none matched.
  */
-export async function findBoard(company: string): Promise<BoardHit | null> {
-  const slugs = candidateSlugs(company).slice(0, 3);
+export async function findBoard(company: string, extraSlugs: string[] = []): Promise<BoardHit | null> {
+  const slugs = [...new Set([...extraSlugs, ...candidateSlugs(company)])].slice(0, 4);
   const attempts: Promise<BoardHit | null>[] = [];
   for (const slug of slugs) for (const p of PROVIDERS) attempts.push(p(slug, company).catch(() => null));
   const results = (await Promise.all(attempts)).filter(Boolean) as BoardHit[];

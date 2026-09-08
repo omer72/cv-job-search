@@ -1,29 +1,49 @@
 import { NextResponse } from "next/server";
 import { findBoard } from "@/lib/ats";
-import { extractJobsFromPage, findCareersUrl } from "@/lib/search";
+import { extractJobsFromPage, findCareersUrl, jobsFromCompanyUrl, normaliseUrl, slugsFromUrl } from "@/lib/search";
 import { linkedinJobsUrl } from "@/lib/slug";
+import { STRINGS, type Lang } from "@/lib/i18n";
 import type { CompanyResult } from "@/lib/schemas";
 
 export const runtime = "nodejs";
 export const maxDuration = 180;
 
-async function searchCompany(company: string): Promise<CompanyResult> {
-  const base = { company, linkedinUrl: linkedinJobsUrl(company) };
+/**
+ * Find one company's openings. A URL the user supplied is trusted first: it
+ * gives us the real board slug (and, for anything but LinkedIn, a page we can
+ * read directly) instead of guessing from the company name.
+ */
+async function searchCompany(company: string, hintUrl: string, lang: Lang): Promise<CompanyResult> {
+  const t = STRINGS[lang];
+  const hint = hintUrl ? normaliseUrl(hintUrl) : null;
+  const isLinkedinHint = Boolean(hint && /linkedin\./i.test(hint.hostname));
+  const base = {
+    company,
+    linkedinUrl: isLinkedinHint ? `${hint!.toString().replace(/\/$/, "")}/jobs/` : linkedinJobsUrl(company),
+  };
 
-  const board = await findBoard(company);
+  const board = await findBoard(company, hint ? slugsFromUrl(hint.toString()) : []);
   if (board) {
     return { ...base, source: board.source, careersUrl: board.careersUrl, jobs: board.jobs, note: "" };
   }
 
-  const careersUrl = await findCareersUrl(company);
-  if (!careersUrl) {
+  if (hint) {
+    const jobs = await jobsFromCompanyUrl(company, hint.toString());
+    if (jobs.length) {
+      return { ...base, source: "careers-page", careersUrl: hint.toString(), jobs, note: "" };
+    }
     return {
       ...base,
-      source: "none",
-      careersUrl: "",
+      source: isLinkedinHint ? "linkedin-only" : "careers-page",
+      careersUrl: isLinkedinHint ? "" : hint.toString(),
       jobs: [],
-      note: "No public job board or careers page found. Check LinkedIn manually, or add the careers URL by using the company's exact board name.",
+      note: isLinkedinHint ? t.noteLinkedinOnly : t.noteUnreadable,
     };
+  }
+
+  const careersUrl = await findCareersUrl(company);
+  if (!careersUrl) {
+    return { ...base, source: "none", careersUrl: "", jobs: [], note: t.noteNoBoard };
   }
 
   const jobs = await extractJobsFromPage(company, careersUrl);
@@ -32,23 +52,26 @@ async function searchCompany(company: string): Promise<CompanyResult> {
     source: "careers-page",
     careersUrl,
     jobs,
-    note: jobs.length ? "" : "Careers page found but no openings could be read from it (often a JavaScript-only listing).",
+    note: jobs.length ? "" : t.noteUnreadable,
   };
 }
 
 export async function POST(req: Request) {
   try {
-    const body = (await req.json()) as { companies?: unknown };
+    const body = (await req.json()) as { companies?: unknown; urls?: unknown; lang?: unknown };
     const companies = Array.isArray(body.companies)
       ? body.companies.map(String).map((c) => c.trim()).filter(Boolean).slice(0, 15)
       : [];
+    const urls: Record<string, string> =
+      body.urls && typeof body.urls === "object" ? (body.urls as Record<string, string>) : {};
+    const lang: Lang = body.lang === "he" ? "he" : "en";
     if (!companies.length) {
       return NextResponse.json({ error: "Add at least one company." }, { status: 400 });
     }
 
     const results = await Promise.all(
       companies.map((c) =>
-        searchCompany(c).catch(
+        searchCompany(c, String(urls[c] ?? "").trim(), lang).catch(
           (err): CompanyResult => ({
             company: c,
             source: "error",

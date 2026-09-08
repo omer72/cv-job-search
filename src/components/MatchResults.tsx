@@ -1,15 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Badge, Bullets, Card, GroupLabel, Meter, SectionTitle, cx, fitLabel, scoreTone } from "./ui";
+import { Badge, Bullets, Card, GroupLabel, Meter, SectionTitle, cx, fitKey, scoreTone } from "./ui";
+import { useLang } from "./lang";
 import type { ScoredJob } from "@/lib/schemas";
 
-const FIT_LABEL = { under: "below your level", match: "level match", over: "above your level" } as const;
 const LOC_TONE = { good: "good", unclear: "neutral", poor: "bad" } as const;
 // Written out rather than interpolated so Tailwind sees every class it must generate.
 const FIT_TEXT = { good: "text-good", info: "text-info", warn: "text-warn", bad: "text-bad" } as const;
 
 export function MatchResults({ jobs }: { jobs: ScoredJob[] }) {
+  const { t } = useLang();
   const [minScore, setMinScore] = useState(0);
   const [company, setCompany] = useState("all");
   const [open, setOpen] = useState<string | null>(null);
@@ -20,14 +21,24 @@ export function MatchResults({ jobs }: { jobs: ScoredJob[] }) {
     (j) => j.match.score >= minScore && (company === "all" || j.company === company)
   );
 
+  // One block per company, companies ordered by their best-fitting role.
+  const groups = useMemo(() => {
+    const byCompany = new Map<string, ScoredJob[]>();
+    for (const job of visible) {
+      const list = byCompany.get(job.company);
+      if (list) list.push(job);
+      else byCompany.set(job.company, [job]);
+    }
+    return [...byCompany.entries()]
+      .map(([name, list]) => ({ name, jobs: list, best: list[0]?.match.score ?? 0 }))
+      .sort((a, b) => b.best - a.best);
+  }, [visible]);
+
   if (!jobs.length) {
     return (
       <Card className="px-6 py-12 text-center">
-        <p className="font-display text-xl font-medium text-ink-900">Your ranked roles land here</p>
-        <p className="mx-auto mt-2 max-w-sm text-sm text-ink-500">
-          Name the companies you want to work at and run the search. Every opening they have gets a
-          fit score, best first.
-        </p>
+        <p className="font-display text-xl font-medium text-ink-900">{t.matchesEmptyTitle}</p>
+        <p className="mx-auto mt-2 max-w-sm text-sm text-ink-500">{t.matchesEmptyBody}</p>
       </Card>
     );
   }
@@ -35,12 +46,14 @@ export function MatchResults({ jobs }: { jobs: ScoredJob[] }) {
   return (
     <Card className="overflow-hidden">
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-line px-6 py-5">
-        <SectionTitle hint={visible.length === jobs.length ? undefined : `${visible.length} of ${jobs.length}`}>
-          {jobs.length} roles scored
+        <SectionTitle
+          hint={visible.length === jobs.length ? undefined : t.visibleOf(visible.length, jobs.length)}
+        >
+          {t.rolesScored(jobs.length)}
         </SectionTitle>
         <div className="flex flex-wrap items-center gap-5">
           <label className="flex items-center gap-2 text-xs text-ink-500">
-            Fit at least
+            {t.fitAtLeast}
             <input
               type="range"
               min={0}
@@ -57,7 +70,7 @@ export function MatchResults({ jobs }: { jobs: ScoredJob[] }) {
             onChange={(e) => setCompany(e.target.value)}
             className="rounded-sm border border-line-firm bg-surface px-2 py-1 text-xs text-ink-700"
           >
-            <option value="all">All companies</option>
+            <option value="all">{t.allCompanies}</option>
             {companies.map((c) => (
               <option key={c} value={c}>
                 {c}
@@ -67,8 +80,19 @@ export function MatchResults({ jobs }: { jobs: ScoredJob[] }) {
         </div>
       </div>
 
-      <ul className="divide-y divide-line">
-        {visible.map((job, rank) => {
+      {groups.map((group) => (
+        <section key={group.name}>
+          <div className="flex items-center gap-3 border-b border-line bg-sunk px-6 py-2.5">
+            <h3 dir="auto" className="min-w-0 flex-1 truncate text-sm font-semibold text-ink-900">
+              {group.name}
+            </h3>
+            <span className="shrink-0 text-[11px] text-ink-500">{t.companyRoles(group.jobs.length)}</span>
+            <span className={cx("tnum shrink-0 text-[11px]", FIT_TEXT[scoreTone(group.best)])}>
+              {t.bestFit(group.best)}
+            </span>
+          </div>
+          <ul className="divide-y divide-line">
+        {group.jobs.map((job, rank) => {
           const expanded = open === job.id;
           const tone = scoreTone(job.match.score);
           return (
@@ -76,22 +100,24 @@ export function MatchResults({ jobs }: { jobs: ScoredJob[] }) {
               <button
                 onClick={() => setOpen(expanded ? null : job.id)}
                 aria-expanded={expanded}
-                className="flex w-full items-center gap-5 px-6 py-4 text-left transition-colors hover:bg-sunk"
+                className="flex w-full items-center gap-5 px-6 py-4 text-start transition-colors hover:bg-sunk"
               >
                 <span className="font-display w-6 shrink-0 text-sm text-ink-300">{rank + 1}</span>
 
-                <span className="min-w-0 flex-1">
+                <span dir="auto" className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold text-ink-900">{job.title}</span>
                   <span className="block truncate text-xs text-ink-500">
-                    {[job.company, job.location, job.department].filter(Boolean).join(" · ")}
+                    {[job.location, job.department].filter(Boolean).join(" · ")}
                   </span>
-                  <span className="mt-1 line-clamp-1 block text-xs text-ink-700">{job.match.verdict}</span>
+                  <span className="mt-1 line-clamp-1 block text-xs text-ink-700">
+                    {job.match.verdict || t.heuristicOnly}
+                  </span>
                 </span>
 
                 <span className="hidden w-40 shrink-0 sm:block">
                   <Meter score={job.match.score} />
                   <span className="mt-1.5 flex items-baseline justify-between">
-                    <span className={cx("text-[11px]", FIT_TEXT[tone])}>{fitLabel(job.match.score)}</span>
+                    <span className={cx("text-[11px]", FIT_TEXT[tone])}>{t.fit[fitKey(job.match.score)]}</span>
                     <span className="tnum font-display text-lg leading-none text-ink-900">
                       {job.match.score}
                     </span>
@@ -114,32 +140,32 @@ export function MatchResults({ jobs }: { jobs: ScoredJob[] }) {
               </button>
 
               {expanded ? (
-                <div className="space-y-5 border-t border-line px-6 py-5 pl-[3.6rem]">
+                <div className="space-y-5 border-t border-line px-6 py-5 ps-[3.6rem]">
                   <div className="grid gap-5 sm:grid-cols-2">
                     <ChipList
-                      label="Lines up with your CV"
+                      label={t.linesUp}
                       tone="good"
                       values={job.match.matchedSkills}
-                      empty="Nothing lines up directly."
+                      empty={t.nothingLinesUp}
                     />
                     <ChipList
-                      label="Not in your CV"
+                      label={t.notInCv}
                       tone="bad"
                       values={job.match.missingSkills}
-                      empty="No obvious gaps."
+                      empty={t.noGaps}
                     />
                   </div>
 
                   {job.match.reasons.length ? (
                     <div>
-                      <GroupLabel>Why this score</GroupLabel>
+                      <GroupLabel>{t.whyThisScore}</GroupLabel>
                       <Bullets items={job.match.reasons} />
                     </div>
                   ) : null}
 
                   {job.match.cvTweaks.length ? (
-                    <div className="border-l-2 border-brand pl-4">
-                      <GroupLabel>Change this to improve your odds here</GroupLabel>
+                    <div className="border-s-2 border-brand ps-4">
+                      <GroupLabel>{t.improveOdds}</GroupLabel>
                       <Bullets items={job.match.cvTweaks} dot="bg-brand" />
                     </div>
                   ) : null}
@@ -151,25 +177,25 @@ export function MatchResults({ jobs }: { jobs: ScoredJob[] }) {
                       rel="noreferrer"
                       className="rounded-sm bg-brand px-3 py-1.5 font-medium text-white transition-colors hover:bg-brand-ink"
                     >
-                      Read the posting
+                      {t.readPosting}
                     </a>
-                    <Badge>{FIT_LABEL[job.match.seniorityFit]}</Badge>
-                    <Badge tone={LOC_TONE[job.match.locationFit]}>location {job.match.locationFit}</Badge>
-                    {job.remote ? <Badge tone="info">remote</Badge> : null}
-                    <span>from {job.source}</span>
-                    {job.postedAt ? <span>posted {new Date(job.postedAt).toLocaleDateString()}</span> : null}
+                    <Badge>{t.seniorityFit[job.match.seniorityFit]}</Badge>
+                    <Badge tone={LOC_TONE[job.match.locationFit]}>{t.locationFit(job.match.locationFit)}</Badge>
+                    {job.remote ? <Badge tone="info">{t.remote}</Badge> : null}
+                    <span>{t.fromSource(job.source)}</span>
+                    {job.postedAt ? <span>{t.postedOn(new Date(job.postedAt).toLocaleDateString())}</span> : null}
                   </div>
                 </div>
               ) : null}
             </li>
           );
         })}
-      </ul>
+          </ul>
+        </section>
+      ))}
 
       {!visible.length ? (
-        <p className="px-6 py-10 text-center text-sm text-ink-500">
-          Nothing at {minScore}% fit or above. Lower the threshold to see more.
-        </p>
+        <p className="px-6 py-10 text-center text-sm text-ink-500">{t.noneAbove(minScore)}</p>
       ) : null}
     </Card>
   );

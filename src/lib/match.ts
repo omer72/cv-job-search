@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { jsonCompletion } from "./ai";
+import { languageInstruction, type Lang } from "./i18n";
 import { MatchSchema, type CvProfile, type Job, type Match, type ScoredJob } from "./schemas";
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9+#.]+/g, " ").trim();
@@ -36,7 +37,7 @@ function fallbackMatch(job: Job, profile: CvProfile): Match {
   return {
     jobId: job.id,
     score: Math.round(preScore(profile, job) * 100),
-    verdict: "Heuristic score only — detailed analysis unavailable.",
+    verdict: "",
     matchedSkills: [],
     missingSkills: [],
     seniorityFit: "match",
@@ -53,7 +54,8 @@ function fallbackMatch(job: Job, profile: CvProfile): Match {
 export async function scoreJobs(
   profile: CvProfile,
   jobs: Job[],
-  deep = 24
+  deep = 24,
+  lang: Lang = "en"
 ): Promise<ScoredJob[]> {
   const ranked = [...jobs].sort((a, b) => preScore(profile, b) - preScore(profile, a));
   const top = ranked.slice(0, deep);
@@ -80,7 +82,8 @@ export async function scoreJobs(
         const res = await jsonCompletion({
           schema: BatchSchema,
           system:
-            "You are a technical recruiter scoring how well a candidate's CV fits specific job openings. Be calibrated and honest: 85-100 strong fit, 65-84 worth applying, 40-64 a stretch, below 40 poor fit. Weight required skills and seniority most, then domain and location. Use only evidence in the CV. Return one entry per job, with jobId copied exactly.",
+            "You are a technical recruiter scoring how well a candidate's CV fits specific job openings. Be calibrated and honest: 85-100 strong fit, 65-84 worth applying, 40-64 a stretch, below 40 poor fit. Weight required skills and seniority most, then domain and location. Use only evidence in the CV. Return one entry per job, with jobId copied exactly." +
+            languageInstruction(lang),
           shape:
             '{"matches":[{"jobId":string,"score":number,"verdict":string (one sentence),"matchedSkills":string[],"missingSkills":string[],"seniorityFit":"under"|"match"|"over","locationFit":"good"|"unclear"|"poor","reasons":string[],"cvTweaks":string[] (specific edits that would raise this score)}]}',
           user: `CANDIDATE CV PROFILE:\n${cvBlob}\n\nJOBS:\n${JSON.stringify(

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Instrument_Sans, Newsreader } from "next/font/google";
+import { Assistant, Frank_Ruhl_Libre, Instrument_Sans, Newsreader } from "next/font/google";
 import "./globals.css";
 
 const instrument = Instrument_Sans({
@@ -16,6 +16,20 @@ const newsreader = Newsreader({
   display: "swap",
 });
 
+// Hebrew needs its own pair — neither Instrument Sans nor Newsreader covers the script.
+const assistant = Assistant({
+  subsets: ["hebrew", "latin"],
+  variable: "--font-assistant",
+  display: "swap",
+});
+
+const frankRuhl = Frank_Ruhl_Libre({
+  subsets: ["hebrew", "latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-frank-ruhl",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "CV → Job Match",
   description:
@@ -24,7 +38,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${instrument.variable} ${newsreader.variable}`}>
+    <html
+      lang="en"
+      className={`${instrument.variable} ${newsreader.variable} ${assistant.variable} ${frankRuhl.variable}`}
+    >
       <body>{children}</body>
     </html>
   );

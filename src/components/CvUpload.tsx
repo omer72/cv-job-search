@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Button, Card, Spinner, cx } from "./ui";
+import { useLang } from "./lang";
 import type { CvProfile, CvReview } from "@/lib/schemas";
 
 export type CvResult = {
@@ -20,6 +21,7 @@ export function CvUpload({
   onParsed: (r: CvResult) => void;
   onReset: () => void;
 }) {
+  const { lang, t } = useLang();
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -31,12 +33,13 @@ export function CvUpload({
     try {
       const body = new FormData();
       body.append("file", file);
+      body.append("lang", lang);
       const res = await fetch("/api/cv/parse", { method: "POST", body });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Upload failed.");
+      if (!res.ok) throw new Error(data.error || t.uploadFailed);
       onParsed(data as CvResult);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed.");
+      setError(err instanceof Error ? err.message : t.uploadFailed);
     } finally {
       setBusy(false);
     }
@@ -45,8 +48,8 @@ export function CvUpload({
   if (current && !busy) {
     const { profile } = current;
     const meta = [
-      profile.yearsExperience ? `${profile.yearsExperience} years` : "",
-      profile.seniority,
+      profile.yearsExperience ? t.years(profile.yearsExperience) : "",
+      t.seniority[profile.seniority] ?? profile.seniority,
       profile.location,
     ].filter(Boolean);
     return (
@@ -56,16 +59,16 @@ export function CvUpload({
             <path d="M14 3v5h5M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z" />
             <path d="M8.5 13h7M8.5 16.5h4.5" strokeLinecap="round" />
           </svg>
-          <div className="min-w-0">
+          <div dir="auto" className="min-w-0">
             <p className="truncate text-sm font-medium text-ink-900">{current.fileName}</p>
             <p className="truncate text-xs text-ink-500">
-              {profile.headline || "CV read"}
+              {profile.headline || t.cvRead}
               {meta.length ? ` — ${meta.join(", ")}` : ""}
             </p>
           </div>
         </div>
         <Button variant="ghost" onClick={onReset}>
-          Replace CV
+          {t.replaceCv}
         </Button>
       </Card>
     );
@@ -105,18 +108,15 @@ export function CvUpload({
         {busy ? (
           <div className="flex flex-col items-center gap-3">
             <Spinner className="h-5 w-5 text-brand" />
-            <p className="font-display text-xl font-medium text-ink-900">Reading your CV</p>
-            <p className="text-xs text-ink-500">Extraction and review run together — usually 10 to 25 seconds.</p>
+            <p className="font-display text-xl font-medium text-ink-900">{t.reading}</p>
+            <p className="text-xs text-ink-500">{t.readingHint}</p>
           </div>
         ) : (
           <>
             <p className="font-display text-2xl font-medium leading-snug text-ink-900">
-              Drop your CV here
+              {t.dropTitle}
             </p>
-            <p className="mx-auto mt-2 max-w-sm text-sm text-ink-500">
-              Or click to choose a file. PDF only — your own CV, or LinkedIn&apos;s
-              &ldquo;Save to PDF&rdquo; export. Up to 12&nbsp;MB.
-            </p>
+            <p className="mx-auto mt-2 max-w-sm text-sm text-ink-500">{t.dropBody}</p>
           </>
         )}
       </div>

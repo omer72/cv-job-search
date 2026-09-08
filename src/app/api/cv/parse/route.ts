@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { pdfToText } from "@/lib/pdf";
 import { extractProfile, reviewCv } from "@/lib/cv";
+import type { Lang } from "@/lib/i18n";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -19,6 +20,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "PDF is larger than 12 MB." }, { status: 400 });
     }
 
+    const lang: Lang = form.get("lang") === "he" ? "he" : "en";
     const text = await pdfToText(await file.arrayBuffer());
     if (text.replace(/\s/g, "").length < 200) {
       return NextResponse.json(
@@ -30,7 +32,10 @@ export async function POST(req: Request) {
       );
     }
 
-    const [profile, review] = await Promise.all([extractProfile(text), reviewCv(text)]);
+    const [profile, review] = await Promise.all([
+      extractProfile(text, lang),
+      reviewCv(text, lang),
+    ]);
     return NextResponse.json({ fileName: file.name, text, profile, review });
   } catch (err) {
     const message = err instanceof Error ? err.message : "CV parsing failed.";

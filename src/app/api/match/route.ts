@@ -10,6 +10,7 @@ const Body = z.object({
   profile: CvProfileSchema,
   jobs: z.array(JobSchema),
   deep: z.number().min(1).max(60).optional(),
+  lang: z.enum(["en", "he"]).default("en"),
 });
 
 export async function POST(req: Request) {
@@ -18,7 +19,7 @@ export async function POST(req: Request) {
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Bad request." }, { status: 400 });
     }
-    const { profile, jobs, deep } = parsed.data;
+    const { profile, jobs, deep, lang } = parsed.data;
     if (!jobs.length) return NextResponse.json({ scored: [] });
 
     // Too many openings to score is not an error: keep the best-ranked 300 and drop the tail.
@@ -27,7 +28,7 @@ export async function POST(req: Request) {
         ? [...jobs].sort((a, b) => preScore(profile, b) - preScore(profile, a)).slice(0, 300)
         : jobs;
 
-    const scored = await scoreJobs(profile, capped, deep ?? 24);
+    const scored = await scoreJobs(profile, capped, deep ?? 24, lang);
     return NextResponse.json({ scored });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Matching failed.";

@@ -61,6 +61,51 @@ export async function findCareersUrl(company: string): Promise<string | null> {
   return checks.find(Boolean) ?? null;
 }
 
+/** Slug candidates taken from a URL the user supplied (site domain or LinkedIn page). */
+export function slugsFromUrl(raw: string): string[] {
+  const url = normaliseUrl(raw);
+  if (!url) return [];
+  const out: string[] = [];
+  const linkedin = url.pathname.match(/\/company\/([^/]+)/i);
+  if (/linkedin\./i.test(url.hostname) && linkedin) out.push(linkedin[1].toLowerCase());
+  const host = url.hostname.replace(/^www\./, "");
+  const label = host.split(".")[0];
+  if (label && label.length >= 2) out.push(label.toLowerCase());
+  return [...new Set(out)];
+}
+
+export function normaliseUrl(raw: string): URL | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  try {
+    return new URL(/^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Read openings from a URL the user gave us for a company. LinkedIn cannot be
+ * scraped, so a LinkedIn page is used only for the company slug; anything else
+ * is probed for a careers page and then read directly.
+ */
+export async function jobsFromCompanyUrl(company: string, raw: string): Promise<Job[]> {
+  const url = normaliseUrl(raw);
+  if (!url) return [];
+  if (/linkedin\./i.test(url.hostname)) return [];
+
+  const origin = url.origin;
+  const candidates = [
+    url.toString(),
+    ...CAREER_PATHS.map((path) => `${origin}${path}`),
+  ];
+  for (const candidate of [...new Set(candidates)]) {
+    const jobs = await extractJobsFromPage(company, candidate);
+    if (jobs.length) return jobs;
+  }
+  return [];
+}
+
 const ExtractedJobs = z.object({
   jobs: z
     .array(

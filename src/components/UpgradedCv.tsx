@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Badge, Bullets, Button, GroupLabel, Meter, Spinner, scoreTone } from "./ui";
 import { useLang } from "./lang";
+import { cvFileName, upgradedCvToDocHtml } from "@/lib/cvExport";
 import { hasPlaceholders, upgradedCvToText, type UpgradeResult } from "@/lib/schemas";
 
 export function UpgradedCvTab({
@@ -32,6 +33,29 @@ export function UpgradedCvTab({
     }
   }
 
+  function download() {
+    if (!upgraded) return;
+    const html = upgradedCvToDocHtml(upgraded.cv, {
+      dir: t.dir,
+      experienceTitle: t.upgradeExperience,
+    });
+    // The BOM keeps Word from guessing the encoding wrong on Hebrew.
+    const blob = new Blob([`\ufeff${html}`], { type: "application/msword" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = cvFileName(upgraded.cv, "doc");
+    // Firefox only follows an anchor that is in the document, and revoking the
+    // URL in the same tick can cancel the download before it starts.
+    link.style.display = "none";
+    document.body.append(link);
+    link.click();
+    setTimeout(() => {
+      link.remove();
+      URL.revokeObjectURL(url);
+    }, 1000);
+  }
+
   if (!upgraded) {
     return (
       <div className="max-w-lg">
@@ -49,6 +73,7 @@ export function UpgradedCvTab({
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
+        <Button onClick={download}>{t.upgradeDownload}</Button>
         <Button variant="ghost" onClick={copy}>
           {copied ? t.upgradeCopied : t.upgradeCopy}
         </Button>

@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { Badge, Bullets, Card, GroupLabel, Meter, cx } from "./ui";
 import { useLang } from "./lang";
-import type { Dict } from "@/lib/i18n";
+import { UpgradedCvTab } from "./UpgradedCv";
+import type { UpgradeResult } from "@/lib/schemas";
 import type { CvProfile, CvReview } from "@/lib/schemas";
 
 const SEVERITY_TONE = { high: "bad", medium: "warn", low: "neutral" } as const;
@@ -12,12 +13,20 @@ const SEVERITY_RAIL = { high: "bg-bad", medium: "bg-warn", low: "bg-line-firm" }
 export function CvReviewPanel({
   review,
   profile,
+  upgraded,
+  upgrading,
+  note,
+  onUpgrade,
 }: {
   review: CvReview;
   profile: CvProfile;
+  upgraded: UpgradeResult | null;
+  upgrading: boolean;
+  note: string | null;
+  onUpgrade: () => void;
 }) {
   const { t } = useLang();
-  const [tab, setTab] = useState<"fixes" | "rewrites" | "profile">("fixes");
+  const [tab, setTab] = useState<"fixes" | "rewrites" | "upgraded" | "profile">("fixes");
   const highCount = review.issues.filter((i) => i.severity === "high").length;
 
   return (
@@ -52,6 +61,7 @@ export function CvReviewPanel({
           [
             ["fixes", t.tabFixes(review.issues.length)],
             ["rewrites", t.tabRewrites(review.rewrites.length)],
+            ["upgraded", t.tabUpgraded],
             ["profile", t.tabProfile],
           ] as const
         ).map(([key, label]) => (
@@ -142,6 +152,16 @@ export function CvReviewPanel({
               <p className="text-sm text-ink-500">{t.noRewrites}</p>
             )}
           </div>
+        ) : null}
+
+        {tab === "upgraded" ? (
+          <UpgradedCvTab
+            upgraded={upgraded}
+            previousScore={review.score}
+            busy={upgrading}
+            note={note}
+            onGenerate={onUpgrade}
+          />
         ) : null}
 
         {tab === "profile" ? (

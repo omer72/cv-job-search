@@ -9,13 +9,16 @@ import { Card, cx } from "@/components/ui";
 import { StatStrip } from "@/components/StatStrip";
 import { LangProvider } from "@/components/lang";
 import { STRINGS, type Lang } from "@/lib/i18n";
-import type { CompanyResult, ScoredJob } from "@/lib/schemas";
+import { upgradedCvToText } from "@/lib/schemas";
+import type { CompanyResult, ScoredJob, UpgradeResult } from "@/lib/schemas";
 
 const STORAGE_KEY = "cv-job-match:v1";
 const LANG_KEY = "cv-job-match:lang";
 
 type Persisted = {
   cv: CvResult | null;
+  /** The rewritten CV and the score it earns, once asked for. */
+  upgraded: UpgradeResult | null;
   companies: string[];
   /** Careers-page or LinkedIn URLs the user supplied, keyed by company name. */
   urls: Record<string, string>;
@@ -23,13 +26,15 @@ type Persisted = {
   scored: ScoredJob[];
 };
 
-const EMPTY: Persisted = { cv: null, companies: [], urls: {}, results: [], scored: [] };
+const EMPTY: Persisted = { cv: null, upgraded: null, companies: [], urls: {}, results: [], scored: [] };
 
 export default function Home() {
   const [state, setState] = useState<Persisted>(EMPTY);
   const [hydrated, setHydrated] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [upgrading, setUpgrading] = useState(false);
+  const [upgradeNote, setUpgradeNote] = useState<string | null>(null);
   const [lang, setLang] = useState<Lang>("en");
   const t = STRINGS[lang];
 
@@ -104,6 +109,41 @@ export default function Home() {
       setError(err instanceof Error ? err.message : t.errGeneric);
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function runUpgrade() {
+    if (!state.cv) return;
+    setUpgrading(true);
+    setError(null);
+    setUpgradeNote(null);
+    try {
+      // Pressing rewrite again iterates on the newest version and its own
+      // review, so each pass works on what is left rather than starting over.
+      const base = state.upgraded;
+      const res = await fetch("/api/cv/upgrade", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          text: base ? upgradedCvToText(base.cv) : state.cv.text,
+          review: base ? base.review : state.cv.review,
+          lang,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || t.errGeneric);
+      const next = data.upgraded as UpgradeResult;
+      // The reviewer is not perfectly consistent, so a further pass can score
+      // lower. Keep whichever version actually scores best.
+      if (base && next.score <= base.score) {
+        setUpgradeNote(t.upgradeNoBetter);
+        return;
+      }
+      setState((s) => ({ ...s, upgraded: next }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t.errGeneric);
+    } finally {
+      setUpgrading(false);
     }
   }
 
@@ -191,11 +231,20 @@ export default function Home() {
           <div className="min-w-0 space-y-6">
             <CvUpload
               current={state.cv}
-              onParsed={(cv) => setState((s) => ({ ...s, cv }))}
-              onReset={() => setState((s) => ({ ...s, cv: null, scored: [] }))}
+              onParsed={(cv) => setState((s) => ({ ...s, cv, upgraded: null }))}
+              onReset={() => setState((s) => ({ ...s, cv: null, upgraded: null, scored: [] }))}
             />
 
-            {state.cv ? <CvReviewPanel review={state.cv.review} profile={state.cv.profile} /> : null}
+            {state.cv ? (
+              <CvReviewPanel
+                review={state.cv.review}
+                profile={state.cv.profile}
+                upgraded={state.upgraded}
+                upgrading={upgrading}
+                note={upgradeNote}
+                onUpgrade={runUpgrade}
+              />
+            ) : null}
 
             {state.cv ? <MatchResults jobs={state.scored} /> : null}
           </div>

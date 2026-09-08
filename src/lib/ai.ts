@@ -38,6 +38,8 @@ export async function jsonCompletion<S extends ZodTypeAny>(opts: {
   shape: string;
   temperature?: number;
   maxTokens?: number;
+  /** Long structured answers sometimes fall into repeating one phrase; a small penalty stops it. */
+  frequencyPenalty?: number;
 }): Promise<ZodOutput<S>> {
   const system = `${opts.system}\n\nReply with a single JSON object and nothing else. It must match this shape:\n${opts.shape}`;
   const messages: { role: "system" | "user" | "assistant"; content: string }[] = [
@@ -51,19 +53,31 @@ export async function jsonCompletion<S extends ZodTypeAny>(opts: {
       model: MODEL,
       temperature: opts.temperature ?? 0.2,
       max_tokens: opts.maxTokens ?? 2500,
+      frequency_penalty: opts.frequencyPenalty ?? 0,
       response_format: { type: "json_object" },
       messages,
     });
     const raw = res.choices[0]?.message?.content ?? "";
+    const ranOut = res.choices[0]?.finish_reason === "length";
     try {
       return opts.schema.parse(extractJson(raw));
     } catch (err) {
       lastError = err instanceof Error ? err.message : String(err);
-      messages.push({ role: "assistant", content: raw.slice(0, 4000) });
-      messages.push({
-        role: "user",
-        content: `That JSON failed validation: ${lastError}\nReturn corrected JSON only.`,
-      });
+      if (ranOut) {
+        // The answer was cut off (or the model looped). Feeding the truncated
+        // text back invites the same loop, so ask again for a shorter answer.
+        messages.push({
+          role: "user",
+          content:
+            "Your previous answer ran past the length limit. Answer again, complete and much shorter: keep every section but at most 3 bullets each, one line per bullet, no repetition.",
+        });
+      } else {
+        messages.push({ role: "assistant", content: raw.slice(0, 4000) });
+        messages.push({
+          role: "user",
+          content: `That JSON failed validation: ${lastError}\nReturn corrected JSON only.`,
+        });
+      }
     }
   }
   throw new Error(`Model returned invalid JSON: ${lastError}`);

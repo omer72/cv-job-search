@@ -17,6 +17,14 @@ const en = {
 
   videoTitle: "How it works",
   videoHint: "86 seconds, sound on.",
+  statScore: "CV score",
+  statFixes: "Fixes to make",
+  statFixesNone: "nothing urgent",
+  statCompanies: "Companies",
+  statOpenRoles: (n: number) => `${n} open roles`,
+  statBest: "Best fit",
+  statBestAt: (company: string) => `at ${company}`,
+  statPending: "not scored yet",
 
   stepUpload: "Upload a CV",
   stepUploaded: "CV read",
@@ -55,6 +63,7 @@ const en = {
   urlClear: "Remove URL",
 
   cvScoreLabel: "CV score out of 100",
+  scoreOutOf: (n: number) => `${n} out of 100`,
   highPriority: (n: number) => `${n} high priority`,
   suggestions: (n: number) => `${n} suggestions`,
   missingSection: (s: string) => `no ${s}`,
@@ -165,6 +174,14 @@ const he: typeof en = {
 
   videoTitle: "איך זה עובד",
   videoHint: "‏93 שניות, עם קול.",
+  statScore: "ציון קורות החיים",
+  statFixes: "תיקונים לביצוע",
+  statFixesNone: "אין דחוף",
+  statCompanies: "חברות",
+  statOpenRoles: (n: number) => `${n} משרות פתוחות`,
+  statBest: "ההתאמה הגבוהה",
+  statBestAt: (company: string) => `ב-${company}`,
+  statPending: "עוד לא דורגו",
 
   stepUpload: "העלו קורות חיים",
   stepUploaded: "קורות החיים נקראו",
@@ -203,6 +220,7 @@ const he: typeof en = {
   urlClear: "הסרת הכתובת",
 
   cvScoreLabel: "ציון קורות החיים מתוך 100",
+  scoreOutOf: (n: number) => `${n} מתוך 100`,
   highPriority: (n: number) => `${n} בעדיפות גבוהה`,
   suggestions: (n: number) => `${n} המלצות`,
   missingSection: (s: string) => `חסר: ${s}`,

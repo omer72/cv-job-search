@@ -90,7 +90,7 @@ export function CvUpload({
         }}
         onClick={() => !busy && inputRef.current?.click()}
         className={cx(
-          "cursor-pointer rounded border border-dashed px-6 py-12 text-center transition-colors",
+          "cursor-pointer rounded-md border-2 border-dashed px-6 py-14 text-center transition-colors",
           dragging ? "border-brand bg-brand-soft" : "border-line-firm hover:border-brand hover:bg-sunk"
         )}
       >
@@ -113,7 +113,12 @@ export function CvUpload({
           </div>
         ) : (
           <>
-            <p className="font-display text-2xl font-medium leading-snug text-ink-900">
+            <div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-full bg-brand-soft text-brand">
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path d="M12 16V4m0 0L8 8m4-4 4 4M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" strokeLinecap="round" />
+              </svg>
+            </div>
+            <p className="font-display text-3xl font-medium leading-snug text-ink-900">
               {t.dropTitle}
             </p>
             <p className="mx-auto mt-2 max-w-sm text-sm text-ink-500">{t.dropBody}</p>

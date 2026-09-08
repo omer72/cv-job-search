@@ -6,6 +6,7 @@ import { CvReviewPanel } from "@/components/CvReviewPanel";
 import { CompanyManager } from "@/components/CompanyManager";
 import { MatchResults } from "@/components/MatchResults";
 import { Card, cx } from "@/components/ui";
+import { StatStrip } from "@/components/StatStrip";
 import { LangProvider } from "@/components/lang";
 import { STRINGS, type Lang } from "@/lib/i18n";
 import type { CompanyResult, ScoredJob } from "@/lib/schemas";
@@ -149,34 +150,44 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+      <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
         {!state.cv ? (
-          <div className="mb-10 max-w-2xl">
-            <h1 className="font-display text-4xl font-medium leading-[1.15] tracking-tight text-ink-900 sm:text-5xl">
-              {t.heroTitle}
-            </h1>
-            <p className="mt-4 max-w-xl text-base leading-relaxed text-ink-700">{t.heroBody}</p>
+          <div className="mb-10 grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:gap-14">
+            <div>
+              <h1 className="font-display text-4xl font-medium leading-[1.1] tracking-tight text-ink-900 sm:text-5xl lg:text-6xl">
+                {t.heroTitle}
+              </h1>
+              <div className="mt-6 h-1 w-16 bg-brand" />
+              <p className="mt-6 max-w-xl text-lg leading-relaxed text-ink-700">{t.heroBody}</p>
+            </div>
 
-            <Card className="mt-8 overflow-hidden">
+            <Card className="overflow-hidden">
               <div className="flex items-baseline justify-between gap-3 border-b border-line px-4 py-2.5">
                 <h2 className="font-display text-base font-medium text-ink-900">{t.videoTitle}</h2>
                 <span className="text-xs text-ink-500">{t.videoHint}</span>
               </div>
-              {/* key forces a reload when the language changes, so the narration matches the UI */}
+              {/* aspect-video holds the space before metadata arrives; key reloads on language change */}
               <video
                 key={lang}
                 controls
                 preload="metadata"
                 poster={`/how-it-works.${lang}.jpg`}
-                className="block w-full bg-ink-900"
+                className="block aspect-video w-full bg-ink-900"
               >
                 <source src={`/how-it-works.${lang}.mp4`} type="video/mp4" />
               </video>
             </Card>
           </div>
-        ) : null}
+        ) : (
+          <StatStrip
+            review={state.cv.review}
+            companies={state.companies}
+            results={state.results}
+            scored={state.scored}
+          />
+        )}
 
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-8">
           <div className="min-w-0 space-y-6">
             <CvUpload
               current={state.cv}
@@ -189,7 +200,7 @@ export default function Home() {
             {state.cv ? <MatchResults jobs={state.scored} /> : null}
           </div>
 
-          <aside className="min-w-0 space-y-4 lg:sticky lg:top-20 lg:self-start">
+          <aside className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:self-start">
             <CompanyManager
               companies={state.companies}
               setCompanies={(companies) => setState((s) => ({ ...s, companies }))}

@@ -46,7 +46,7 @@ export function CompanyManager({
 
   return (
     <Card className="overflow-hidden">
-      <div className="border-b border-line px-5 py-4">
+      <div className="border-b border-line bg-sunk/60 px-5 py-4">
         <SectionTitle hint={t.companiesCount(companies.length)}>{t.companiesTitle}</SectionTitle>
       </div>
 

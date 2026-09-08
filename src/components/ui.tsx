@@ -17,7 +17,8 @@ export function Card({
   return (
     <div
       className={cx(
-        "rounded-md border border-line bg-surface shadow-[0_1px_0_rgba(19,29,26,0.03)]",
+        "rounded-lg border border-line bg-surface",
+        "shadow-[0_1px_2px_rgba(19,29,26,0.04),0_12px_28px_-20px_rgba(19,29,26,0.28)]",
         className
       )}
     >
@@ -42,9 +43,9 @@ export function Button({
   className?: string;
 }) {
   const base =
-    "inline-flex items-center justify-center gap-2 rounded px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40";
+    "inline-flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40";
   const styles = {
-    primary: "bg-brand text-white hover:bg-brand-ink",
+    primary: "bg-brand text-white shadow-[0_1px_2px_rgba(11,110,95,0.35)] hover:bg-brand-ink",
     ghost: "border border-line-firm bg-surface text-ink-700 hover:bg-sunk",
     danger: "border border-bad/30 bg-bad-soft text-bad hover:border-bad/60",
   }[variant];
@@ -123,37 +124,6 @@ export function Meter({ score, className }: { score: number; className?: string 
       aria-valuemax={100}
     >
       <div className={cx("h-full rounded-full transition-[width]", BAR[scoreTone(score)])} style={{ width: `${pct}%` }} />
-    </div>
-  );
-}
-
-/** A score as a display numeral with its own meter beneath. */
-export function ScoreStat({
-  score,
-  label,
-  size = "md",
-}: {
-  score: number;
-  label?: string;
-  size?: "md" | "lg";
-}) {
-  const tone = scoreTone(score);
-  return (
-    <div className={cx("shrink-0", size === "lg" ? "w-24" : "w-14")}>
-      <div className="flex items-baseline gap-0.5">
-        <span
-          className={cx(
-            "font-display font-medium leading-none",
-            TEXT[tone],
-            size === "lg" ? "text-6xl" : "text-3xl"
-          )}
-        >
-          {Math.round(score)}
-        </span>
-        <span className={cx("font-display", TEXT[tone], size === "lg" ? "text-xl" : "text-sm")}>%</span>
-      </div>
-      <Meter score={score} className={size === "lg" ? "mt-3" : "mt-2"} />
-      {label ? <p className="mt-1.5 text-[11px] text-ink-500">{label}</p> : null}
     </div>
   );
 }

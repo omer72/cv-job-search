@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Badge, Bullets, Card, GroupLabel, ScoreStat, cx } from "./ui";
+import { Badge, Bullets, Card, GroupLabel, Meter, cx } from "./ui";
 import { useLang } from "./lang";
 import type { Dict } from "@/lib/i18n";
 import type { CvProfile, CvReview } from "@/lib/schemas";
 
 const SEVERITY_TONE = { high: "bad", medium: "warn", low: "neutral" } as const;
+const SEVERITY_RAIL = { high: "bg-bad", medium: "bg-warn", low: "bg-line-firm" } as const;
 
 export function CvReviewPanel({
   review,
@@ -21,16 +22,15 @@ export function CvReviewPanel({
 
   return (
     <Card className="overflow-hidden">
-      <div className="flex flex-wrap items-start gap-6 border-b border-line px-6 py-6">
-        <ScoreStat score={review.score} size="lg" label={t.cvScoreLabel} />
-        <div className="min-w-0 flex-1">
+      <div className="border-b border-line bg-sunk/60 px-6 py-7">
+        <div className="min-w-0">
           <h2
             dir="auto"
-            className="font-display text-2xl font-medium leading-snug tracking-tight text-ink-900"
+            className="font-display text-[28px] font-medium leading-snug tracking-tight text-ink-900"
           >
             {review.verdict}
           </h2>
-          <div className="mt-3 flex flex-wrap items-center gap-1.5">
+          <div className="mt-4 flex flex-wrap items-center gap-1.5">
             {highCount ? <Badge tone="bad">{t.highPriority(highCount)}</Badge> : null}
             <Badge>{t.suggestions(review.issues.length)}</Badge>
             {review.missingSections.slice(0, 3).map((s) => (
@@ -38,6 +38,11 @@ export function CvReviewPanel({
                 {t.missingSection(s)}
               </Badge>
             ))}
+          </div>
+
+          <div className="mt-5 flex max-w-sm items-center gap-3">
+            <Meter score={review.score} />
+            <span className="tnum shrink-0 text-xs text-ink-500">{t.scoreOutOf(review.score)}</span>
           </div>
         </div>
       </div>
@@ -54,7 +59,7 @@ export function CvReviewPanel({
             key={key}
             onClick={() => setTab(key)}
             className={cx(
-              "-mb-px border-b-2 px-3 py-3 text-xs font-medium transition-colors first:ps-0",
+              "-mb-px border-b-2 px-3.5 py-3 text-[13px] font-medium transition-colors first:ps-0",
               tab === key
                 ? "border-brand text-ink-900"
                 : "border-transparent text-ink-500 hover:text-ink-700"
@@ -78,6 +83,10 @@ export function CvReviewPanel({
             <ul className="divide-y divide-line border-y border-line">
               {review.issues.map((issue, i) => (
                 <li key={i} className="flex gap-4 py-4 first:pt-0 last:pb-0">
+                  <span
+                    aria-hidden
+                    className={cx("mt-1 w-[3px] shrink-0 rounded-full", SEVERITY_RAIL[issue.severity])}
+                  />
                   <span className="font-display mt-0.5 w-5 shrink-0 text-sm text-ink-300">{i + 1}</span>
                   <div className="min-w-0">
                     <div className="mb-1.5 flex flex-wrap items-center gap-2">

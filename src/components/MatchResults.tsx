@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { Badge, Bullets, Card, GroupLabel, Meter, SectionTitle, cx, fitKey, scoreTone } from "./ui";
 import { useLang } from "./lang";
 import type { ScoredJob } from "@/lib/schemas";
@@ -80,15 +80,18 @@ export function MatchResults({ jobs }: { jobs: ScoredJob[] }) {
         </div>
       </div>
 
-      {groups.map((group) => (
-        <section key={group.name}>
-          <div className="flex items-center gap-3 border-b border-line bg-sunk px-6 py-2.5">
+      {groups.map((group, gi) => (
+        <section key={group.name} className="rise" style={{ "--i": gi } as CSSProperties}>
+          <div className="flex items-center gap-3 border-b border-line bg-sunk px-6 py-3">
             <h3 dir="auto" className="min-w-0 flex-1 truncate text-sm font-semibold text-ink-900">
               {group.name}
             </h3>
             <span className="shrink-0 text-[11px] text-ink-500">{t.companyRoles(group.jobs.length)}</span>
-            <span className={cx("tnum shrink-0 text-[11px]", FIT_TEXT[scoreTone(group.best)])}>
+            <span className={cx("tnum shrink-0 text-[11px] font-medium", FIT_TEXT[scoreTone(group.best)])}>
               {t.bestFit(group.best)}
+            </span>
+            <span className="hidden w-20 shrink-0 sm:block">
+              <Meter score={group.best} />
             </span>
           </div>
           <ul className="divide-y divide-line">

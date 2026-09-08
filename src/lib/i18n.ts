@@ -15,6 +15,9 @@ const en = {
   privacy:
     "Everything stays in this browser. Your CV text, profile and results are kept in local storage and sent only to your own OpenAI key for analysis. LinkedIn blocks automated access, so each company links to its own board instead.",
 
+  videoTitle: "How it works",
+  videoHint: "86 seconds, sound on.",
+
   stepUpload: "Upload a CV",
   stepUploaded: "CV read",
   stepCompanies: "Add companies",
@@ -106,6 +109,7 @@ const en = {
   },
   seniorityFit: { under: "below your level", match: "level match", over: "above your level" },
   locationFit: (v: string) => `location ${v}`,
+  locationFitValue: { good: "good", unclear: "unclear", poor: "poor" } as Record<string, string>,
 
   seniority: {
     intern: "intern",
@@ -156,6 +160,9 @@ const he: typeof en = {
     "קורות החיים חוזרים עם ציון ועם השורות המדויקות שכדאי לשנות. אחר כך רשמו את החברות שבהן תרצו לעבוד: המשרות הפתוחות שלהן נשלפות ישירות מלוחות הדרושים שבהם הן מפרסמות, וכל משרה מקבלת ציון התאמה למה שכתוב אצלכם.",
   privacy:
     "הכול נשאר בדפדפן הזה. הטקסט של קורות החיים, הפרופיל והתוצאות נשמרים באחסון המקומי, ונשלחים לניתוח רק עם מפתח ה-API שלכם. לינקדאין חוסמת גישה אוטומטית, ולכן כל חברה מקושרת ללוח המשרות שלה.",
+
+  videoTitle: "איך זה עובד",
+  videoHint: "‏93 שניות, עם קול.",
 
   stepUpload: "העלו קורות חיים",
   stepUploaded: "קורות החיים נקראו",
@@ -248,6 +255,7 @@ const he: typeof en = {
   },
   seniorityFit: { under: "מתחת לרמה שלכם", match: "מתאים לרמה", over: "מעל הרמה שלכם" },
   locationFit: (v: string) => `מקום: ${v}`,
+  locationFitValue: { good: "מתאים", unclear: "לא ברור", poor: "בעייתי" },
 
   seniority: {
     intern: "מתמחה",

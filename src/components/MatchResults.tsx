@@ -180,7 +180,7 @@ export function MatchResults({ jobs }: { jobs: ScoredJob[] }) {
                       {t.readPosting}
                     </a>
                     <Badge>{t.seniorityFit[job.match.seniorityFit]}</Badge>
-                    <Badge tone={LOC_TONE[job.match.locationFit]}>{t.locationFit(job.match.locationFit)}</Badge>
+                    <Badge tone={LOC_TONE[job.match.locationFit]}>{t.locationFit(t.locationFitValue[job.match.locationFit] ?? job.match.locationFit)}</Badge>
                     {job.remote ? <Badge tone="info">{t.remote}</Badge> : null}
                     <span>{t.fromSource(job.source)}</span>
                     {job.postedAt ? <span>{t.postedOn(new Date(job.postedAt).toLocaleDateString())}</span> : null}

@@ -156,6 +156,23 @@ export default function Home() {
               {t.heroTitle}
             </h1>
             <p className="mt-4 max-w-xl text-base leading-relaxed text-ink-700">{t.heroBody}</p>
+
+            <Card className="mt-8 overflow-hidden">
+              <div className="flex items-baseline justify-between gap-3 border-b border-line px-4 py-2.5">
+                <h2 className="font-display text-base font-medium text-ink-900">{t.videoTitle}</h2>
+                <span className="text-xs text-ink-500">{t.videoHint}</span>
+              </div>
+              {/* key forces a reload when the language changes, so the narration matches the UI */}
+              <video
+                key={lang}
+                controls
+                preload="metadata"
+                poster={`/how-it-works.${lang}.jpg`}
+                className="block w-full bg-ink-900"
+              >
+                <source src={`/how-it-works.${lang}.mp4`} type="video/mp4" />
+              </video>
+            </Card>
           </div>
         ) : null}
 

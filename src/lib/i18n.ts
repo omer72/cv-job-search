@@ -144,6 +144,8 @@ const en = {
     "is on LinkedIn, which blocks automated reading. We used the page to find its job board and came up empty — open the LinkedIn jobs link, or paste the company's own careers URL instead.",
 
   errNoOpenings: "No openings could be read for those companies. The notes under each company say why.",
+  errRateLimited: (minutes: number) =>
+    `Too many requests from this connection. Try again in about ${minutes} minute${minutes === 1 ? "" : "s"}.`,
   errSearch: "Job search failed.",
   errMatch: "Matching failed.",
   errGeneric: "Something went wrong.",
@@ -290,6 +292,8 @@ const he: typeof en = {
     "— לינקדאין חוסמת קריאה אוטומטית. השתמשנו בעמוד כדי לחפש לוח משרות ולא מצאנו — פתחו את קישור המשרות בלינקדאין, או הדביקו את כתובת עמוד הקריירה של החברה.",
 
   errNoOpenings: "לא הצלחנו לקרוא משרות פתוחות בחברות האלה. ההערות מתחת לכל חברה מסבירות למה.",
+  errRateLimited: (minutes: number) =>
+    `יותר מדי בקשות מהחיבור הזה. נסו שוב בעוד כ-${minutes} דקות.`,
   errSearch: "חיפוש המשרות נכשל.",
   errMatch: "חישוב ההתאמה נכשל.",
   errGeneric: "משהו השתבש.",

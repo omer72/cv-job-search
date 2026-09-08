@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { preScore, scoreJobs } from "@/lib/match";
 import { CvProfileSchema, JobSchema } from "@/lib/schemas";
+import { STRINGS } from "@/lib/i18n";
+import { rateLimit } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 export const maxDuration = 180;
@@ -21,6 +23,14 @@ export async function POST(req: Request) {
     }
     const { profile, jobs, deep, lang } = parsed.data;
     if (!jobs.length) return NextResponse.json({ scored: [] });
+
+    const limited = rateLimit(req, {
+      name: "match",
+      max: 15,
+      windowMs: 60 * 60 * 1000,
+      message: STRINGS[lang].errRateLimited,
+    });
+    if (limited) return limited;
 
     // Too many openings to score is not an error: keep the best-ranked 300 and drop the tail.
     const capped =

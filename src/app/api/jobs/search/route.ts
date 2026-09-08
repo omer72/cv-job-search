@@ -3,6 +3,7 @@ import { findBoard } from "@/lib/ats";
 import { extractJobsFromPage, findCareersUrl, jobsFromCompanyUrl, normaliseUrl, slugsFromUrl } from "@/lib/search";
 import { linkedinJobsUrl } from "@/lib/slug";
 import { STRINGS, type Lang } from "@/lib/i18n";
+import { rateLimit } from "@/lib/ratelimit";
 import type { CompanyResult } from "@/lib/schemas";
 
 export const runtime = "nodejs";
@@ -68,6 +69,15 @@ export async function POST(req: Request) {
     if (!companies.length) {
       return NextResponse.json({ error: "Add at least one company." }, { status: 400 });
     }
+
+    // Fans out to dozens of third-party boards per request, and can fall back to a model call.
+    const limited = rateLimit(req, {
+      name: "jobs-search",
+      max: 15,
+      windowMs: 60 * 60 * 1000,
+      message: STRINGS[lang].errRateLimited,
+    });
+    if (limited) return limited;
 
     const results = await Promise.all(
       companies.map((c) =>

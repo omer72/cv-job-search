@@ -11,7 +11,10 @@ npm run lint       # next lint
 npm run typecheck  # tsc --noEmit
 ```
 
-No test suite exists. Verification is `npm run typecheck && npm run build`.
+No test framework. `npm run check` runs the assert-based self-checks that live beside the code
+they cover (`src/lib/*.check.mts`, run by Node's own TypeScript support): the rate limiter, the
+CV export builders, and the techmap CSV reader. Full verification is
+`npm run typecheck && npm run check && npm run build`.
 Requires `OPENAI_API_KEY` in `.env.local` (`SERPER_API_KEY` optional — see `.env.example`).
 
 ## Architecture
@@ -21,9 +24,11 @@ Next.js 16 (Turbopack) App Router, React 19, Tailwind v4 (CSS-first `@theme` in
 lives in `localStorage` under `cv-job-match:v1`, owned entirely by `src/app/page.tsx`
 (one `Persisted` object; children get props + setters, no context/store).
 
-Flow: `/api/cv/parse` (PDF → text → profile + review in parallel) → `/api/jobs/search`
-(companies → live postings) → `/api/match` (profile + jobs → ranked fit scores).
-`page.tsx#runSearch` chains the last two in one user action.
+Flow: `/api/cv/parse` (PDF → text → profile + review in parallel) → jobs from either
+`/api/jobs/search` (named companies → their own boards) or `/api/jobs/techmap` (the daily
+Israeli feed, filtered by job type) → `/api/match` (profile + jobs → ranked fit scores).
+`page.tsx` chains a job source into `scoreJobs` in one user action, and both sources land in
+the same ranked slate. `/api/cv/upgrade` rewrites the CV and re-scores the result.
 
 `src/lib/schemas.ts` is the contract for everything. Every zod schema there is used three
 ways: to validate LLM output, as the exported TypeScript type for the UI, and (for
@@ -45,9 +50,16 @@ public ATS providers × top-3 slugs in parallel and keeps whichever returns the 
 Each provider is a `Provider` function mapping one vendor's JSON to `Job`; adding a board
 means writing one such function and appending it to `PROVIDERS`. No keys, no auth.
 
-Fallback when no board matches: `findCareersUrl()` (Serper web search if keyed, else
-domain/path probing) → `getPageText()` → LLM extraction. LinkedIn is deliberately never
-scraped; `linkedinJobsUrl()` produces a manual search link instead.
+Fallback when no board matches: a URL the user supplies for that company (careers page read
+directly; a LinkedIn page only yields the board slug), then `findCareersUrl()` (Serper web
+search if keyed, else domain/path probing) → `getPageText()` → LLM extraction. LinkedIn is
+deliberately never scraped; `linkedinJobsUrl()` produces a manual search link instead.
+
+`lib/techmap.ts` is the second source: github.com/mluggy/techmap publishes one CSV per job
+type, refreshed daily, under ODbL — fetched raw with an hour of `revalidate`, parsed by a
+small RFC 4180 reader, filtered by type/keyword/city/level, mapped to `Job`. The feed has no
+job descriptions, so `description` is built from title, level, industry and city to give the
+scorer something to read. Keep the ODbL credit visible in the UI.
 
 ### Match scoring (`lib/match.ts`)
 

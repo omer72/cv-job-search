@@ -110,7 +110,9 @@ export function MatchResults({ jobs }: { jobs: ScoredJob[] }) {
                 <span dir="auto" className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold text-ink-900">{job.title}</span>
                   <span className="block truncate text-xs text-ink-500">
-                    {[job.location, job.department].filter(Boolean).join(" · ")}
+                    {[job.location, t.techmapTypes[job.department] ?? job.department]
+                      .filter(Boolean)
+                      .join(" · ")}
                   </span>
                   <span className="mt-1 line-clamp-1 block text-xs text-ink-700">
                     {job.match.verdict || t.heuristicOnly}

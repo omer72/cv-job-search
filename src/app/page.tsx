@@ -5,12 +5,13 @@ import { CvUpload, type CvResult } from "@/components/CvUpload";
 import { CvReviewPanel } from "@/components/CvReviewPanel";
 import { CompanyManager } from "@/components/CompanyManager";
 import { MatchResults } from "@/components/MatchResults";
+import { TechmapPanel, type TechmapQuery } from "@/components/TechmapPanel";
 import { Card, cx } from "@/components/ui";
 import { StatStrip } from "@/components/StatStrip";
 import { LangProvider } from "@/components/lang";
 import { STRINGS, type Lang } from "@/lib/i18n";
 import { upgradedCvToText } from "@/lib/schemas";
-import type { CompanyResult, ScoredJob, UpgradeResult } from "@/lib/schemas";
+import type { CompanyResult, Job, ScoredJob, UpgradeResult } from "@/lib/schemas";
 
 const STORAGE_KEY = "cv-job-match:v1";
 const LANG_KEY = "cv-job-match:lang";
@@ -34,6 +35,7 @@ export default function Home() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [upgrading, setUpgrading] = useState(false);
+  const [feedBusy, setFeedBusy] = useState(false);
   const [upgradeNote, setUpgradeNote] = useState<string | null>(null);
   const [lang, setLang] = useState<Lang>("en");
   const t = STRINGS[lang];
@@ -75,6 +77,43 @@ export default function Home() {
     }
   }, [state, hydrated]);
 
+  async function scoreJobs(jobs: Job[]): Promise<ScoredJob[]> {
+    const res = await fetch("/api/match", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ profile: state.cv!.profile, jobs, lang }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || t.errMatch);
+    return data.scored as ScoredJob[];
+  }
+
+  async function runFeedSearch(q: TechmapQuery) {
+    if (!state.cv) return;
+    setFeedBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/jobs/techmap", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ ...q, limit: 200, lang }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || t.errSearch);
+      const jobs = data.jobs as Job[];
+      if (!jobs.length) {
+        setError(t.techmapNone);
+        return;
+      }
+      const scored = await scoreJobs(jobs);
+      setState((s) => ({ ...s, scored }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t.errGeneric);
+    } finally {
+      setFeedBusy(false);
+    }
+  }
+
   async function runSearch() {
     if (!state.cv) return;
     setBusy(true);
@@ -96,15 +135,8 @@ export default function Home() {
         return;
       }
 
-      const matchRes = await fetch("/api/match", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ profile: state.cv.profile, jobs, lang }),
-      });
-      const matchData = await matchRes.json();
-      if (!matchRes.ok) throw new Error(matchData.error || t.errMatch);
-
-      setState((s) => ({ ...s, results, scored: matchData.scored as ScoredJob[] }));
+      const scored = await scoreJobs(jobs);
+      setState((s) => ({ ...s, results, scored }));
     } catch (err) {
       setError(err instanceof Error ? err.message : t.errGeneric);
     } finally {
@@ -244,6 +276,10 @@ export default function Home() {
                 note={upgradeNote}
                 onUpgrade={runUpgrade}
               />
+            ) : null}
+
+            {state.cv ? (
+              <TechmapPanel busy={feedBusy} disabled={!state.cv} onSearch={runFeedSearch} />
             ) : null}
 
             {state.cv ? <MatchResults jobs={state.scored} /> : null}
